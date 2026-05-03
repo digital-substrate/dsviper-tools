@@ -135,3 +135,11 @@ zip and on a fresh dev workstation that clones the sibling repos.
 ## License
 
 This project is licensed under the MIT License — see [LICENSE](LICENSE).
+
+## Runtime dependency
+
+At runtime, this project depends on the `dsviper` Python package
+(distributed on PyPI), which is **proprietary** (PyPI classifier
+`License :: Other/Proprietary License`). See
+[https://pypi.org/project/dsviper/](https://pypi.org/project/dsviper/)
+for the package's licensing posture and contact information.
