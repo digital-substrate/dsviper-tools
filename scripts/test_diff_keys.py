@@ -1,4 +1,3 @@
-# Copyright (c) Digital Substrate 2025, All rights reserved.
 from __future__ import annotations
 from dsviper import *
 import os
