@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
 # Canonical build entry point — regenerates ui_*.py and resources_rc.py
-# from .ui/.qrc sources. Excluded from dsviper-X.Y.Z-devkit.zip via the
-# `dev/` filter (see devkit-website/deploy.py:ZIP_EXCLUDES).
+# from .ui/.qrc sources. Not shipped in the published DevKit ZIP.
 #
 # Run from the repo root:
 #
 #     python3 dev/build.py
 #
-# Phase 1 (autoreferential): inputs and outputs both live in this repo.
+# Inputs and outputs both live in this repo:
 #   - inputs : dsviper_components/*.ui, resources.qrc
 #   - outputs: dsviper_components/ui_*.py, resources_rc.py
 #
 # Idempotent: running twice on a clean tree leaves the tree clean.
-# Phase 1 success criterion: `git status` is clean both before and after.
+# Success criterion: `git status` is clean both before and after.
 #
 # The PySide6 version is pinned in requirements.txt; mismatches between
-# contributors are the root cause of the phantom diffs documented in
-# urgent-refactoring.md (Phase 1).
+# contributors silently produce different generated files (phantom diffs).
 
 from __future__ import annotations
 

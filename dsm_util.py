@@ -92,15 +92,10 @@ def create_python_package(args):
     sibling_root = path_tools.parent.parent
 
     bundled_jars = sorted(path_tools.glob("kibo-*.jar"))
-    # Sibling-checkout: try the public name first, then fall back to the
-    # Babel-private prefix (kibo is Babel-private today, public-ready).
-    sibling_jars = sorted((sibling_root / "kibo" / "target").glob("kibo-*.jar")) \
-        or sorted((sibling_root / "com.digitalsubstrate.kibo" / "target").glob("kibo-*.jar"))
+    sibling_jars = sorted((sibling_root / "kibo" / "target").glob("kibo-*.jar"))
 
     bundled_templates = path_tools.parent / "templates" / "python"
     sibling_templates = sibling_root / "kibo-template-viper" / "python"
-    if not sibling_templates.exists():
-        sibling_templates = sibling_root / "com.digitalsubstrate.kibo-template-viper" / "python"
 
     if not arguments.kibo:
         env_jar = os.environ.get("KIBO_JAR")
@@ -111,9 +106,8 @@ def create_python_package(args):
         elif sibling_jars:
             arguments.kibo = sibling_jars[-1].resolve()
         else:
-            print(f"'kibo: no jar found. Tried {path_tools}/kibo-*.jar (DevKit ZIP layout), "
-                  f"{sibling_root}/kibo/target/kibo-*.jar and "
-                  f"{sibling_root}/com.digitalsubstrate.kibo/target/kibo-*.jar (sibling-checkout). "
+            print(f"'kibo: no jar found. Tried {path_tools}/kibo-*.jar (DevKit ZIP layout) "
+                  f"and {sibling_root}/kibo/target/kibo-*.jar (sibling-checkout). "
                   f"Set KIBO_JAR to override.")
             exit(1)
 

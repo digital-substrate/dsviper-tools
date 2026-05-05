@@ -116,10 +116,7 @@ order:
 2. **Bundled (DevKit ZIP layout)**: `tools/kibo-*.jar` next to
    `dsm_util.py`, templates at `../templates/python`.
 3. **Sibling-checkout (developer workstation)**:
-   `../kibo/target/kibo-*.jar` and `../kibo-template-viper/python`,
-   with fallback to `../com.digitalsubstrate.kibo/...` and
-   `../com.digitalsubstrate.kibo-template-viper/...` while those repos
-   remain Babel-private.
+   `../kibo/target/kibo-*.jar` and `../kibo-template-viper/python`.
 
 Both layouts are supported so the same script works inside the DevKit
 zip and on a fresh dev workstation that clones the sibling repos.
@@ -129,8 +126,8 @@ zip and on a fresh dev workstation that clones the sibling repos.
 - Bundled inside `dsviper-X.Y.Z-devkit.zip` under `tools/` for users
   of the all-in-one DevKit.
 - For the conceptual ground (DSM, Kibo, Template Model, the Database
-  contract), see `devkit-doc` (Sphinx user docs) and
-  `devkit-notebook/notebook/Ecosystem_Policy.md`.
+  contract), see [devkit-doc](https://docs.digitalsubstrate.io/) (the
+  published Sphinx user docs).
 
 ## License
 

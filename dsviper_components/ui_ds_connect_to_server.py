@@ -87,7 +87,7 @@ class Ui_DSConnectToServer(object):
     def retranslateUi(self, DSConnectToServer):
         DSConnectToServer.setWindowTitle(QCoreApplication.translate("DSConnectToServer", u"Frame", None))
         self.groupBox.setTitle(QCoreApplication.translate("DSConnectToServer", u"Server", None))
-        self.w_host_line_edit.setText(QCoreApplication.translate("DSConnectToServer", u"192.168.1.16", None))
+        self.w_host_line_edit.setText(QCoreApplication.translate("DSConnectToServer", u"127.0.0.1", None))
         self.w_service_line_edit.setText(QCoreApplication.translate("DSConnectToServer", u"54321", None))
         self.w_socket_path_line_edit.setText(QCoreApplication.translate("DSConnectToServer", u"/tmp/raptor.sock", None))
         self.w_use_socket_path_check_box.setText("")

@@ -1,5 +1,4 @@
 # Runtime dependencies for the dsviper Database / CommitDatabase tooling.
-# Mirrored into the DevKit ZIP by devkit-website/deploy.py.
 
 # dsviper runtime + Python binding
 dsviper>=1.2
@@ -7,8 +6,7 @@ dsviper>=1.2
 # Qt UI for cdbe.py, dbe.py, dsviper_components/
 # Pinned to guarantee reproducible regeneration of ui_*.py and
 # resources_rc.py via dev/build.py — different pyside6-uic
-# versions silently produce different generated files (phantom
-# diffs). See urgent-refactoring.md, Phase 1.
+# versions silently produce different generated files (phantom diffs).
 PySide6==6.10.1
 
 # Used by ad-hoc scripts under scripts/ (not required by the console
