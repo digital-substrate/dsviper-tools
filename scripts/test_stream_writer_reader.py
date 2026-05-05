@@ -2,7 +2,7 @@ from __future__ import annotations
 from dsviper import *
 import os
 
-FILENAME = "/Volumes/DigitalSubstrate/dsm-samples/Re"
+FILENAME = os.environ.get("DSM_SAMPLES_PATH", "Re")
 report, dsm_defs, defs = DSMBuilder.assemble(FILENAME).parse()
 
 if report.has_error():
