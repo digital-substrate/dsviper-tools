@@ -7,7 +7,7 @@ import zlib
 import base64
 from pathlib import Path
 
-from dsviper import DSMDefinitions, DSMBuilder, DSMParseReport, CommitDatabase, Database, ValueBlob
+from dsviper import DSMDefinitions, DSMBuilder, DSMParseReport, CommitDatabase, Database
 
 
 def fatal_report_error(report: DSMParseReport, message: str):
@@ -34,15 +34,14 @@ def encode_main(args):
     builder = DSMBuilder.assemble(args.input_dsm)
     report, dsm_definitions, _ = builder.parse()
     fatal_report_error(report, "can't encode dsm definitions.")
-    with open(args.output_dsmb, 'wb') as file:
-        file.write(dsm_definitions.encode().encoded())
+    with open(args.output_dsm_json, 'w') as file:
+        file.write(dsm_definitions.json_encode())
 
 
 # decode sub-command
 def decode_main(args):
-    with open(args.input_dsmb, 'rb') as file:
-        blob = ValueBlob(file.read())
-    dsm_definitions = DSMDefinitions.decode(blob)
+    with open(args.input_dsm_json, 'r') as file:
+        dsm_definitions = DSMDefinitions.json_decode(file.read())
     with open(args.output_dsm, 'w') as file:
         file.write(dsm_definitions.to_dsm())
 
@@ -89,7 +88,7 @@ def create_python_package(args):
     # KIBO_JAR / KIBO_TEMPLATES env vars override both. The bundled
     # layout is tried first because it matches the published zip.
     path_tools = Path(__file__).parent
-    sibling_root = path_tools.parent.parent
+    sibling_root = path_tools.parent.parent if path_tools.name == "tools" else path_tools.parent
 
     bundled_jars = sorted(path_tools.glob("kibo-*.jar"))
     sibling_jars = sorted((sibling_root / "kibo" / "target").glob("kibo-*.jar"))
@@ -137,17 +136,17 @@ def create_python_package(args):
     filename = os.path.basename(args.input_dsm).lower()
     module, extension = os.path.splitext(filename)
 
-    # Create dsmb
-    dsmb_filename = f'{module}.dsmb'
-    with open(dsmb_filename, 'wb') as file:
-        file.write(dsm_definitions.encode().encoded())
+    # Create dsm.json
+    dsm_json_filename = f'{module}.dsm.json'
+    with open(dsm_json_filename, 'w') as file:
+        file.write(dsm_definitions.json_encode())
 
     # Render Template
     cmd = ['java',
            '-jar', args.kibo,
            '-c', 'python',
            '-n', module,
-           '-d', dsmb_filename,
+           '-d', dsm_json_filename,
            '-t', f"{args.templates}/package",
            '-o', module]
 
@@ -164,14 +163,14 @@ def create_python_package(args):
                '-q',
                '-c', 'python',
                '-n', module,
-               '-d', dsmb_filename,
+               '-d', dsm_json_filename,
                '-t', f"{args.templates}/wheel/pyproject.toml.stg",
                '-o', "."]
 
         subprocess.run(cmd)
 
-    if os.path.exists(dsmb_filename):
-        os.remove(dsmb_filename)
+    if os.path.exists(dsm_json_filename):
+        os.remove(dsm_json_filename)
 
 
 # main parser and common parameters
@@ -185,14 +184,14 @@ parser_check.add_argument("input_dsm", help="the file or folder of DSM Definitio
 parser_check.set_defaults(func=check_main)
 
 # sub-command 'encode' parser and entry point
-parser_encode = subparsers.add_parser('encode', help="assemble, parse and encode the DSM Definitions (.dsm).")
+parser_encode = subparsers.add_parser('encode', help="assemble, parse and encode the DSM Definitions to JSON (.dsm.json).")
 parser_encode.add_argument("input_dsm", help="the file or the folder of DSM Definitions to parse.")
-parser_encode.add_argument("output_dsmb", help="the file to store the binary representation (.dsmb).")
+parser_encode.add_argument("output_dsm_json", help="the file to store the JSON representation (.dsm.json).")
 parser_encode.set_defaults(func=encode_main)
 
 # sub-command 'decode' parser and entry point
 parser_decode = subparsers.add_parser('decode', help="decode and rewrite definitions in DSM language.")
-parser_decode.add_argument("input_dsmb", help="the file with binary encoded definitions (.dsmb).")
+parser_decode.add_argument("input_dsm_json", help="the file with JSON encoded definitions (.dsm.json).")
 parser_decode.add_argument("output_dsm", help="the file to rewrite definitions in DSM language.")
 parser_decode.set_defaults(func=decode_main)
 
