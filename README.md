@@ -5,6 +5,12 @@ ecosystem. One repo, one wheel, all the things a Python developer
 needs to design, host, browse, and administer a dsviper-driven
 database.
 
+## Documentation
+
+Full documentation: https://docs.digitalsubstrate.io/dsviper-tools/
+
+Part of the [DevKit ecosystem](https://docs.digitalsubstrate.io/).
+
 ## What's inside
 
 ```
