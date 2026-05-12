@@ -1,7 +1,7 @@
 # Runtime dependencies for the dsviper Database / CommitDatabase tooling.
 
 # dsviper runtime + Python binding
-dsviper>=1.2
+dsviper>=1.2.10
 
 # Qt UI for cdbe.py, dbe.py, dsviper_components/
 # Pinned to guarantee reproducible regeneration of ui_*.py and
