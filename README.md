@@ -21,6 +21,7 @@ dsviper-tools/
 ├── commit_admin.py              # CLI: CommitDatabase administration
 ├── commit_database_server.py    # service: serve a CommitDatabase over the network
 ├── service_client.py            # CLI: function-pool RPC client
+├── database_export.py           # CLI: export a Database / CommitDatabase to JSON
 ├── dsviper_components/          # Qt widgets and dialogs shared by cdbe/dbe
 │                                # (*.ui sources + ui_*.py generated, both committed)
 │                                # Source-of-truth: dsviper-components
@@ -32,7 +33,7 @@ dsviper-tools/
 └── LICENSE
 ```
 
-The five entry points form one coherent workflow around a Database /
+The entry points form one coherent workflow around a Database /
 CommitDatabase artefact:
 
 ```
@@ -41,6 +42,7 @@ commit_database_server.py      →   expose it on the network
 cdbe.py / dbe.py               →   inspect, browse, debug
 commit_admin.py                →   administer (compaction, audit, …)
 service_client.py              →   talk to function pools
+database_export.py             →   export to JSON (backup, diff, inspection)
 ```
 
 ## Running the tools
@@ -54,6 +56,8 @@ python3 dsm_util.py module foo.dsm
 python3 commit_admin.py --database … reset
 python3 commit_database_server.py --database … --port 54328
 python3 service_client.py …
+python3 database_export.py foo.db --output foo.export
+python3 database_export.py foo.cdb --commit-id last
 ```
 
 ### Building a wheel from a `.dsm`
