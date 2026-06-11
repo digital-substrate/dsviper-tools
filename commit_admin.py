@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import time
 import os
-from dsviper import CommitDatabasing, CommitDatabase, CommitSynchronizer
+from dsviper import CommitDatabasing, CommitDatabase, CommitDatabaseHelper, CommitSynchronizer
 from dsviper import LoggerConsole, LoggerNull, Logging
 
 
@@ -49,10 +49,10 @@ def reduce_head_main(args):
 
     if args.loop:
         while True:
-            db.reduce_heads()
+            CommitDatabaseHelper.reduce_heads(db)
             time.sleep(args.update_interval)
     else:
-        db.reduce_heads()
+        CommitDatabaseHelper.reduce_heads(db)
 
     db.close()
 

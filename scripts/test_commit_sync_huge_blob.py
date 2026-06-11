@@ -51,7 +51,7 @@ si.create_zero_blob(doc_B.huge_blob_2, blob_layout, SIZE_HUGE_2)
 si.freeze_blob(doc_B.huge_blob_1)
 si.freeze_blob(doc_B.huge_blob_2)
 
-mutable_state = CommitMutableState(source.initial_state())
+mutable_state = CommitMutableState(CommitStateBuilder.initial_state(source))
 mutable_state.attachment_mutating().set(A_C_B, key_C, doc_B)
 source.commit_mutations("First document", mutable_state)
 

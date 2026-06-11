@@ -9,6 +9,7 @@ import sys
 from dsviper import (
     Database,
     CommitDatabase,
+    CommitStateBuilder,
     AttachmentGetting,
     DefinitionsConst,
     Value,
@@ -75,7 +76,7 @@ def open_source(args):
     if CommitDatabase.is_compatible(path):
         cdb = CommitDatabase.open(path, readonly=True)
         commit_id = resolve_commit_id(cdb, args.commit_id)
-        state = cdb.state(commit_id)
+        state = CommitStateBuilder.state(cdb, commit_id)
         return Source(
             kind="CommitDatabase",
             handle=cdb,

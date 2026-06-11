@@ -5,7 +5,7 @@ print(f'{store.state().cache_requests()=}')
 print(f'{store.state().cache_hits()=}')
 print(f'{store.state().cache_hit_rate()=}')
 
-state = store.database().state(store.database().last_commit_id())
+state = CommitStateBuilder.state(store.database(), store.database().last_commit_id())
 time = state.cache_preload()
 requests = state.cache_requests()
 time_ms = round(time * 1000, 2)
@@ -15,7 +15,7 @@ print(f'Preload: {time_ms} ms for {requests} objects ({time_per_object_us} us)')
 time = 0
 N = 100
 for i in range(N):
-    state = store.database().state(store.database().last_commit_id())
+    state = CommitStateBuilder.state(store.database(), store.database().last_commit_id())
     time += state.cache_preload()
 
 time_ms = round(time * 1000 / N, 2)

@@ -46,6 +46,9 @@ class MainWindow(QMainWindow):
         super().__init__(*args, **kwargs)
         self._bootstrap_database_path: str | None = None
 
+        self._store = CommitStore()
+        self._store.set_notifier(CommitStoreNotifying.create(DSCommitStoreNotifier.instance()))
+
         self._live_enabled = False
         self._live_is_manager = False
         self._databases_path = QDir.homePath() + "/Databases"
@@ -118,7 +121,7 @@ class MainWindow(QMainWindow):
         DSSettings().register_default()
 
     def _setup_dialog(self):
-        store = CommitStore.instance()
+        store = self._store
         self._inspect_dialog = DSInspectDialog()
         self._commits_dialog = DSCommitsDialog(store)
         self._commit_program_dialog = DSCommitProgramDialog(store)
@@ -396,7 +399,7 @@ class MainWindow(QMainWindow):
 
     def _setup_central_widget(self):
         self._documents = DSDocumentsCommitStore()
-        self._documents.set_store(CommitStore.instance())
+        self._documents.set_store(self._store)
         self.setCentralWidget(self._documents)
 
     def _setup_connections(self):
@@ -432,7 +435,7 @@ class MainWindow(QMainWindow):
 
     def close_database(self):
         try:
-            CommitStore.instance().close()
+            self._store.close()
             self._configure_window_title()
             self._validate_actions()
         except ViperError as e:
@@ -448,7 +451,7 @@ class MainWindow(QMainWindow):
         self._inspect_database_did_close()
 
     def _store_reset_database(self):
-        CommitStore.instance().reset()
+        self._store.reset()
 
     def _store_database_will_reset(self):
         self._disable_live()
@@ -457,7 +460,7 @@ class MainWindow(QMainWindow):
         self._inspect_definitions_did_change()
 
     def _store_state_did_change(self):
-        store = CommitStore.instance()
+        store = self._store
         self._undo_action.setEnabled(store.can_undo())
         self._redo_action.setEnabled(store.can_redo())
 
@@ -473,13 +476,13 @@ class MainWindow(QMainWindow):
 
     def _forward_triggered(self):
         try:
-            CommitStore.instance().forward()
+            self._store.forward()
         except ViperError as e:
             self._except_present(e)
 
     def _merge_heads_triggered(self):
         try:
-            CommitStore.instance().reduce_heads()
+            self._store.reduce_heads()
         except ViperError as e:
             self._except_present(e)
 
@@ -503,10 +506,10 @@ class MainWindow(QMainWindow):
             self._disable_live()
 
     def _undo_triggered(self):
-        CommitStore.instance().undo()
+        self._store.undo()
 
     def _redo_triggered(self):
-        CommitStore.instance().redo()
+        self._store.redo()
 
     def _go_forward_triggered(self):
         self._documents.go_forward()
@@ -561,13 +564,13 @@ class MainWindow(QMainWindow):
                 db = CommitDatabase.connect_local(socket_path)
             else:
                 db = CommitDatabase.connect(host, service)
-            CommitStore.instance().use(db)
+            self._store.use(db)
 
         except ViperError as e:
             self._except_present(e)
 
     def _validate_actions(self):
-        store = CommitStore.instance()
+        store = self._store
         has_database = store.has_database()
         has_sos = DSSettings().has_source_of_synchronization()
 
@@ -590,7 +593,7 @@ class MainWindow(QMainWindow):
 
     def _configure_window_title(self):
         title = "CDB Editor (PySide)"
-        store = CommitStore.instance()
+        store = self._store
 
         if store.has_database():
             filename = os.path.basename(store.database().path())
@@ -605,7 +608,7 @@ class MainWindow(QMainWindow):
     # Inspect
     def _inspect_database_did_open(self):
         inspect = self._inspect_dialog.inspect()
-        database = CommitStore.instance().database()
+        database = self._store.database()
         inspect.set_path(database.path())
         inspect.set_documentation(database.documentation())
         inspect.set_uuid(database.uuid().encoded())
@@ -617,7 +620,7 @@ class MainWindow(QMainWindow):
         self._inspect_dialog.inspect().clear()
 
     def _inspect_definitions_did_change(self):
-        self._inspect_dialog.inspect().set_definitions(CommitStore.instance().definitions())
+        self._inspect_dialog.inspect().set_definitions(self._store.definitions())
 
     # Live Mode
     def _configure_live_manager_action(self):
@@ -636,7 +639,7 @@ class MainWindow(QMainWindow):
 
         try:
             if live_sync:
-                path = CommitStore.instance().database().path()
+                path = self._store.database().path()
                 self._synchronizer = settings.create_synchronizer(CommitSynchronizer.MODE_SYNC, path)
 
             self._live_enabled = True
@@ -678,7 +681,7 @@ class MainWindow(QMainWindow):
 
         st: DSCommitSynchronizerThread = self.sender()
         if st.info and st.info.updated_definitions():
-            CommitStore.instance().notify_definitions_did_change()
+            self._store.notify_definitions_did_change()
 
         self._live_schedule_if_safe_reduce_forward()
 
@@ -690,7 +693,7 @@ class MainWindow(QMainWindow):
 
     def _live_safe_reduce_forward(self) -> bool:
         try:
-            store = CommitStore.instance()
+            store = self._store
             if self._live_is_manager:
                 store.reduce_heads()
             store.forward()
@@ -702,7 +705,7 @@ class MainWindow(QMainWindow):
     def _set_database(self, filename: str):
         try:
             database = CommitDatabase.open(filename)
-            CommitStore.instance().use(database)
+            self._store.use(database)
             self._configure_window_title()
             self._validate_actions()
 
@@ -726,12 +729,12 @@ class MainWindow(QMainWindow):
 
     def _synchronize(self, mode: str):
         try:
-            path = CommitStore.instance().database().path()
+            path = self._store.database().path()
             synchronizer = DSSettings().create_synchronizer(mode, path)
             info = synchronizer.sync(self._sync_logging)
 
             if info.updated_definitions():
-                CommitStore.instance().notify_definitions_did_change()
+                self._store.notify_definitions_did_change()
 
         except ViperError as e:
             self._except_present(e)
@@ -747,10 +750,6 @@ class MainWindow(QMainWindow):
 
 def main():
     Error.set_process_name("cdbe")
-
-    store = CommitStore.instance()
-    notifier = DSCommitStoreNotifier.instance()
-    store.set_notifier(CommitStoreNotifying.create(notifier))
 
     app = QApplication(sys.argv)
     app.setApplicationDisplayName("CDB Editor")

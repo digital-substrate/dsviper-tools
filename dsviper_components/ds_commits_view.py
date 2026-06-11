@@ -5,7 +5,7 @@ from PySide6.QtGui import (
     QPaintEvent, QMouseEvent, QKeyEvent, QColor, QGuiApplication, QPainter, QPen, QPainterPath,
     QFont, QFontMetricsF, QTextOption)
 from PySide6.QtWidgets import QWidget, QScrollArea
-from dsviper import CommitStore, ValueCommitId, CommitNode, CommitNodeGrid, CommitNodeGridBuilder, ViperError
+from dsviper import CommitStore, CommitStateBuilder, ValueCommitId, CommitNode, CommitNodeGrid, CommitNodeGridBuilder, ViperError
 
 BACKGROUND_COLOR = QColor(30, 30, 30)
 SYSTEM_BLUE_COLOR = QColor(59, 129, 247)
@@ -65,7 +65,7 @@ class DSCommitsView(QWidget):
     def update_commit_states(self, commit_id: ValueCommitId):
         try:
             state = self.store.state()
-            self._enabled_by_commit_id = self.store.database().enabled_by_commit_id(commit_id)
+            self._enabled_by_commit_id = CommitStateBuilder.enabled_by_commit_id(self.store.database(), commit_id)
             self._order_by_commit_id.clear()
             # eval_actions() returns reverse chronological order, reverse for evaluation order
             eval_actions = reversed(state.eval_actions())
