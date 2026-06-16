@@ -172,7 +172,7 @@ class MainWindow(QMainWindow):
     # MARK: - About
     ###############################################################################
     def _about_triggered(self):
-        ds_license.show_about_dialog(self, "DB Editor", "Database Editor")
+        ds_license.show_about_dialog(self, "DB Editor", "Database Editor", version=__version__)
 
     # MARK: - Databasing
     ###############################################################################

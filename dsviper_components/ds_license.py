@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-VERSION = "1.2"
+VERSION = "1.2.2"
 COPYRIGHT = "Copyright (c) 2026 Digital Substrate"
 LICENSE_ID = "MIT"
 
@@ -55,11 +55,11 @@ def show_license_dialog(parent: QWidget | None = None) -> None:
     dialog.exec()
 
 
-def show_about_dialog(parent: QWidget, app_name: str, app_description: str) -> None:
+def show_about_dialog(parent: QWidget, app_name: str, app_description: str, version: str = VERSION) -> None:
     msg = QMessageBox(parent)
     msg.setWindowTitle(f"About {app_name}")
     msg.setIcon(QMessageBox.Icon.Information)
-    msg.setText(f"<b>{app_name}</b> v{VERSION}")
+    msg.setText(f"<b>{app_name}</b> v{version}")
     msg.setInformativeText(
         f"{app_description}\n\n"
         f"{COPYRIGHT}\n"

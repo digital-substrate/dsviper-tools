@@ -604,7 +604,7 @@ class MainWindow(QMainWindow):
 
     # About
     def _about_triggered(self):
-        ds_license.show_about_dialog(self, "CDB Editor", "Commit Database Editor")
+        ds_license.show_about_dialog(self, "CDB Editor", "Commit Database Editor", version=__version__)
 
     # Inspect
     def _inspect_database_did_open(self):
