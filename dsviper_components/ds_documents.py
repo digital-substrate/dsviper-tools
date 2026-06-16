@@ -40,7 +40,7 @@ from dsviper import (
     TypeKey,
     TypeConcept, TypeClub, TypeAnyConcept)
 
-type Abstractions = TypeConcept | TypeClub | TypeAnyConcept
+Abstractions = TypeConcept | TypeClub | TypeAnyConcept
 
 
 class DSDocuments(QFrame, Ui_DSDocuments):

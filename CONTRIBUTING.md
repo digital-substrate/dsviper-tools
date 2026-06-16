@@ -16,7 +16,7 @@ Use [GitHub Issues](https://github.com/digital-substrate/dsviper-tools/issues) a
 
 ## Running locally
 
-Requires Python 3.14+ and PySide6.
+Requires Python 3.10-3.14 and PySide6.
 
 ```bash
 pip install -r requirements.txt          # PySide6 and deps
