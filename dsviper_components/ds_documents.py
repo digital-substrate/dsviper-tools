@@ -64,6 +64,13 @@ class DSDocuments(QFrame, Ui_DSDocuments):
         self._tree_configure_ui()
         self._setup_connections()
 
+    def get_selected_inspection(self):
+        """Return (key, attachment, path) for the currently selected document tree node."""
+        item = self._document_selected_item()
+        if item:
+            return item.key, item.attachment, item.path
+        return self._current_key, None, None
+
     # Helper for better Type Hint
     ################################################################################
     def _set_current_path(self, path: PathConst):
