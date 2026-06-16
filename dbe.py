@@ -20,6 +20,7 @@ from dsviper_components.ds_settings import DSSettings
 from dsviper_components.ds_database_select_dialog import DSDatabaseSelectDialog
 
 from dsviper_components import ds_license
+from _version import __version__
 from dsviper import Database, Error, ViperError
 
 class MainWindow(QMainWindow):
@@ -321,7 +322,7 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationDisplayName("DB Editor")
     app.setApplicationName("DB Editor")
-    app.setApplicationVersion(ds_license.VERSION)
+    app.setApplicationVersion(__version__)
     app.setStyle("fusion")
     app.setWindowIcon(QIcon(":/images/dbe_icon.png"))
 
