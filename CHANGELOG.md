@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This application has its own version line, independent from the `dsviper`
 runtime version (declared as a dependency in `requirements.txt`).
 
+## [Unreleased]
+
+_No changes yet. Bug fixes for the next 1.2.x patch release will be listed here._
+
 ## [1.2.0] - 2026-06-17
 
 First standalone release of the Database / CommitDatabase tooling (Qt Widgets):
