@@ -16,6 +16,6 @@ First standalone release of the Database / CommitDatabase tooling (Qt Widgets):
 
 ### Added
 - GUI and CLI tools around a Database / CommitDatabase artefact.
-- Runs on Python 3.10–3.14.
+- Runs on Python 3.10–3.14; requires dsviper >= 1.2.16.
 - Independent version line (`_version.py`), reported via the application
   version and the About dialog, decoupled from the `dsviper` runtime.
