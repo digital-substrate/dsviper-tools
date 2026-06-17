@@ -8,27 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This application has its own version line, independent from the `dsviper`
 runtime version (declared as a dependency in `requirements.txt`).
 
-## [1.2.2] - 2026-06-16
+## [1.2.0] - 2026-06-17
 
-### Changed
-- The About dialog now shows the application's own version instead of the
-  bundled component-library version.
-
-## [1.2.1] - 2026-06-16
-
-### Fixed
-- Python 3.10 / 3.11 compatibility: the bundled component library no longer
-  uses a Python 3.12-only `type` alias statement that raised a `SyntaxError`
-  on import under 3.10 / 3.11.
-
-### Changed
-- Corrected the declared supported Python range from "3.14+" to "3.10-3.14",
-  matching the actual dependency floor (`dsviper>=1.2.15`, PySide6).
-- The application version is now tracked independently of the `dsviper`
-  runtime version.
-
-## [1.2.0] - 2026-05-03
+First standalone release of the Database / CommitDatabase tooling (Qt Widgets):
+`cdbe`, `dbe`, `commit-admin`, `commit-database-server`, `service-client`,
+`database-export`, `database-import`, and `dsm-util`.
 
 ### Added
-- First standalone release of the Database / CommitDatabase tooling
-  (Qt Widgets).
+- GUI and CLI tools around a Database / CommitDatabase artefact.
+- Runs on Python 3.10–3.14.
+- Independent version line (`_version.py`), reported via the application
+  version and the About dialog, decoupled from the `dsviper` runtime.
