@@ -173,6 +173,106 @@ def create_python_package(args):
         os.remove(dsm_json_filename)
 
 
+def create_node_package(args):
+    # TypeScript / Node analogue of create_python_package. The Node package
+    # reuses the same Kibo `python` converter pointed at the typescript/
+    # template directory — no kibo engine change is required. Sources land
+    # in <module>/src; the package.json and tsconfig.json land at <module>/.
+    #
+    # Layout / jar / template resolution mirror create_python_package (see
+    # there for the DevKit ZIP vs sibling-checkout layouts).
+    path_tools = Path(__file__).parent
+    sibling_root = path_tools.parent.parent if path_tools.name == "tools" else path_tools.parent
+
+    bundled_jars = sorted(path_tools.glob("kibo-*.jar"))
+    sibling_jars = sorted((sibling_root / "kibo" / "target").glob("kibo-*.jar"))
+
+    bundled_templates = path_tools.parent / "templates" / "typescript"
+    sibling_templates = sibling_root / "kibo-template-viper" / "typescript"
+
+    if not args.kibo:
+        env_jar = os.environ.get("KIBO_JAR")
+        if env_jar:
+            args.kibo = Path(env_jar).resolve()
+        elif bundled_jars:
+            args.kibo = bundled_jars[-1].resolve()
+        elif sibling_jars:
+            args.kibo = sibling_jars[-1].resolve()
+        else:
+            print(f"'kibo: no jar found. Tried {path_tools}/kibo-*.jar (DevKit ZIP layout) "
+                  f"and {sibling_root}/kibo/target/kibo-*.jar (sibling-checkout). "
+                  f"Set KIBO_JAR to override.")
+            exit(1)
+
+    if not os.path.exists(args.kibo):
+        print(f"'kibo: {args.kibo} no such file")
+        exit(1)
+
+    if not args.templates:
+        env_templates = os.environ.get("KIBO_TEMPLATES")
+        if env_templates:
+            args.templates = (Path(env_templates) / "typescript").resolve()
+        elif bundled_templates.exists():
+            args.templates = bundled_templates.resolve()
+        else:
+            args.templates = sibling_templates.resolve()
+
+    if not os.path.exists(args.templates):
+        print(f"templates: {args.templates} no such directory")
+        exit(1)
+
+    print(f"* templates: {args.templates}")
+    print(f'*      kibo: {args.kibo}')
+
+    builder = DSMBuilder.assemble(args.input_dsm)
+    report, dsm_definitions, definitions = builder.parse()
+    fatal_report_error(report, "can't create a node package")
+    filename = os.path.basename(args.input_dsm).lower()
+    module, extension = os.path.splitext(filename)
+
+    # Create dsm.json
+    dsm_json_filename = f'{module}.dsm.json'
+    with open(dsm_json_filename, 'w') as file:
+        file.write(dsm_definitions.json_encode())
+
+    src = os.path.join(module, "src")
+
+    # TypeScript sources -> <module>/src
+    cmd = ['java',
+           '-jar', args.kibo,
+           '-c', 'python',
+           '-n', module,
+           '-d', dsm_json_filename,
+           '-t', str(args.templates),
+           '-o', src]
+
+    subprocess.run(cmd)
+
+    # package.json + tsconfig.json -> <module>/
+    cmd = ['java',
+           '-jar', args.kibo,
+           '-c', 'python',
+           '-n', module,
+           '-d', dsm_json_filename,
+           '-t', f"{args.templates}/project",
+           '-o', module]
+
+    subprocess.run(cmd)
+
+    # Embed the definitions blob with the default codec (StreamTokenBinary).
+    # That is exactly the codec the Node binding's Definitions.decode(blob)
+    # assumes when none is given, so the generated definitions.ts decodes the
+    # blob as-is. Do NOT zlib-compress it — definitions.ts base64-decodes the
+    # string and feeds the bytes straight to Definitions.decode.
+    blob = definitions.encode()
+    string = base64.b64encode(blob.encoded()).decode("ascii")
+    with open(os.path.join(src, 'resources.ts'), 'w') as file:
+        file.write(f'export const B64_DEFINITIONS = "{string}";\n')
+
+    if os.path.exists(dsm_json_filename):
+        os.remove(dsm_json_filename)
+
+
 # main parser and common parameters
 parser = argparse.ArgumentParser()
 # we always use a sub-command
@@ -218,6 +318,13 @@ parser_module.add_argument("--templates", help="the folder for python templates.
 parser_module.add_argument("--wheel", help="generate pyproject.toml only (does not build the wheel; run 'python -m build' afterwards).", action="store_true")
 parser_module.add_argument("input_dsm", help="the file or the folder of DSM Definitions to parse.")
 parser_module.set_defaults(func=create_python_package)
+
+# sub-command 'create_node_package' parser and entry point
+parser_node = subparsers.add_parser('create_node_package', help="create a TypeScript / Node package")
+parser_node.add_argument("--kibo", help="the jar file for kibo.")
+parser_node.add_argument("--templates", help="the folder for typescript templates.")
+parser_node.add_argument("input_dsm", help="the file or the folder of DSM Definitions to parse.")
+parser_node.set_defaults(func=create_node_package)
 
 # parse arguments
 arguments = parser.parse_args()
