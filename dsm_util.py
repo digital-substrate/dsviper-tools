@@ -35,13 +35,13 @@ def encode_main(args):
     report, dsm_definitions, _ = builder.parse()
     fatal_report_error(report, "can't encode dsm definitions.")
     with open(args.output_dsm_json, 'w') as file:
-        file.write(dsm_definitions.json_encode())
+        file.write(dsm_definitions.to_json_string())
 
 
 # decode sub-command
 def decode_main(args):
     with open(args.input_dsm_json, 'r') as file:
-        dsm_definitions = DSMDefinitions.json_decode(file.read())
+        dsm_definitions = DSMDefinitions.from_json_string(file.read())
     with open(args.output_dsm, 'w') as file:
         file.write(dsm_definitions.to_dsm())
 
@@ -139,7 +139,7 @@ def create_python_package(args):
     # Create dsm.json
     dsm_json_filename = f'{module}.dsm.json'
     with open(dsm_json_filename, 'w') as file:
-        file.write(dsm_definitions.json_encode())
+        file.write(dsm_definitions.to_json_string())
 
     # Render Template
     cmd = ['java',
@@ -233,7 +233,7 @@ def create_node_package(args):
     # Create dsm.json
     dsm_json_filename = f'{module}.dsm.json'
     with open(dsm_json_filename, 'w') as file:
-        file.write(dsm_definitions.json_encode())
+        file.write(dsm_definitions.to_json_string())
 
     src = os.path.join(module, "src")
 

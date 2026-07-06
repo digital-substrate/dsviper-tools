@@ -43,7 +43,14 @@ def load_manifest(bundle):
     return read_json(path)
 
 
-def load_definitions(bundle):
+def load_definitions(bundle, fmt):
+    if fmt == "xml":
+        path = os.path.join(bundle, "definitions.xml")
+        if not os.path.exists(path):
+            fail(f"Not an export bundle (missing definitions.xml): {bundle}")
+        with open(path, encoding="utf-8") as handle:
+            return DSMDefinitions.from_xml_string(handle.read()).to_definitions().const()
+
     path = os.path.join(bundle, "definitions.json")
     if not os.path.exists(path):
         fail(f"Not an export bundle (missing definitions.json): {bundle}")
@@ -90,7 +97,7 @@ def import_blobs(store, bundle, blob_index, verbose):
         print(f"Imported {len(blob_index)} blobs")
 
 
-def import_documents(definitions, bundle, set_document, verbose):
+def import_documents(definitions, bundle, set_document, verbose, fmt):
     documents_dir = os.path.join(bundle, "documents")
     total = 0
     for attachment in definitions.attachments():
@@ -98,8 +105,12 @@ def import_documents(definitions, bundle, set_document, verbose):
         if not os.path.exists(path):
             continue
         for entry in read_json(path):
-            key = Value.json_decode(json.dumps(entry["key"]), attachment.type_key(), definitions)
-            document = Value.json_decode(json.dumps(entry["document"]), attachment.document_type(), definitions)
+            if fmt == "xml":
+                key = Value.from_xml_string(entry["key"], attachment.type_key(), definitions)
+                document = Value.from_xml_string(entry["document"], attachment.document_type(), definitions)
+            else:
+                key = Value.json_decode(json.dumps(entry["key"]), attachment.type_key(), definitions)
+                document = Value.json_decode(json.dumps(entry["document"]), attachment.document_type(), definitions)
             set_document(attachment, key, document)
             total += 1
     if verbose:
@@ -107,14 +118,14 @@ def import_documents(definitions, bundle, set_document, verbose):
     return total
 
 
-def import_into_database(output, documentation, definitions, bundle, blob_index, verbose):
+def import_into_database(output, documentation, definitions, bundle, blob_index, verbose, fmt):
     db = Database.create(output, documentation=documentation)
     try:
         db.extend_definitions(definitions)
         live = db.definitions()
         db.begin_transaction()
         import_blobs(db.databasing(), bundle, blob_index, verbose)
-        count = import_documents(live, bundle, db.set, verbose)
+        count = import_documents(live, bundle, db.set, verbose, fmt)
         db.commit()
     except BaseException:
         if db.in_transaction():
@@ -126,7 +137,7 @@ def import_into_database(output, documentation, definitions, bundle, blob_index,
     return count, hexdigest
 
 
-def import_into_commit_database(output, documentation, definitions, bundle, blob_index, label, verbose):
+def import_into_commit_database(output, documentation, definitions, bundle, blob_index, label, verbose, fmt):
     cdb = CommitDatabase.create(output, documentation=documentation)
     try:
         cdb.extend_definitions(definitions)
@@ -136,7 +147,7 @@ def import_into_commit_database(output, documentation, definitions, bundle, blob
         import_blobs(store, bundle, blob_index, verbose)
         store.commit()
         mutable = CommitMutableState(CommitState(live))
-        count = import_documents(live, bundle, mutable.attachment_mutating().set, verbose)
+        count = import_documents(live, bundle, mutable.attachment_mutating().set, verbose, fmt)
         cdb.commit_mutations(label, mutable)
     finally:
         hexdigest = cdb.definitions_hexdigest()
@@ -187,7 +198,10 @@ def main():
         os.remove(output)
 
     manifest = load_manifest(bundle)
-    definitions = load_definitions(bundle)
+    fmt = manifest.get("format", "json")
+    if fmt == "xml" and not hasattr(Value, "from_xml_string"):
+        fail("bundle is in XML format but the installed dsviper lacks XML support.")
+    definitions = load_definitions(bundle, fmt)
     blob_index = load_blob_index(bundle)
 
     kind = args.target_kind or (
@@ -196,11 +210,11 @@ def main():
 
     if kind == "commit-database":
         count, hexdigest = import_into_commit_database(
-            output, documentation, definitions, bundle, blob_index, args.label, args.verbose)
+            output, documentation, definitions, bundle, blob_index, args.label, args.verbose, fmt)
         label = "CommitDatabase"
     else:
         count, hexdigest = import_into_database(
-            output, documentation, definitions, bundle, blob_index, args.verbose)
+            output, documentation, definitions, bundle, blob_index, args.verbose, fmt)
         label = "Database"
 
     verify(manifest, count, blob_index, hexdigest)

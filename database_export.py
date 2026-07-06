@@ -100,20 +100,27 @@ def open_source(args):
     sys.exit(1)
 
 
-def export_definitions(source):
-    return json.loads(source.definitions.to_dsm_definitions().json_encode())
+def export_definitions(source, fmt):
+    dsm = source.definitions.to_dsm_definitions()
+    return dsm.to_xml_string(indent=2) if fmt == "xml" else dsm.json_encode(indent=2)
 
 
-def export_documents(source):
+def export_documents(source, fmt):
     documents = {}
     total = 0
     for attachment in source.definitions.attachments():
         entries = []
         for key, document in source.attachment_getting.enumerate(attachment, encoded=False):
-            entries.append({
-                "key": json.loads(Value.json_encode(key)),
-                "document": json.loads(Value.json_encode(document)),
-            })
+            if fmt == "xml":
+                entries.append({
+                    "key": Value.to_xml_string(key),
+                    "document": Value.to_xml_string(document),
+                })
+            else:
+                entries.append({
+                    "key": json.loads(Value.json_encode(key)),
+                    "document": json.loads(Value.json_encode(document)),
+                })
         documents[attachment.identifier()] = entries
         total += len(entries)
     return documents, total
@@ -165,7 +172,11 @@ def write_bundle(source, args, manifest, definitions, documents, blob_index):
     os.makedirs(blobs_dir, exist_ok=True)
 
     _dump_json(os.path.join(out_dir, "manifest.json"), manifest, args.indent)
-    _dump_json(os.path.join(out_dir, "definitions.json"), definitions, args.indent)
+
+    definitions_name = "definitions.xml" if args.format == "xml" else "definitions.json"
+    with open(os.path.join(out_dir, definitions_name), "w", encoding="utf-8") as handle:
+        handle.write(definitions)
+        handle.write("\n")
 
     for identifier, entries in documents.items():
         _dump_json(os.path.join(documents_dir, f"{safe_name(identifier)}.json"), entries, args.indent)
@@ -204,15 +215,22 @@ def main():
                                             "required for a CommitDatabase")
     parser.add_argument("--output", help="output directory; defaults to '<name>.export'")
     parser.add_argument("--indent", type=int, default=2, help="JSON indentation (default 2)")
+    parser.add_argument("--format", choices=["json", "xml"], default="json",
+                        help="wire format for definitions and documents (default json)")
     parser.add_argument("-v", "--verbose", action="store_true", help="report what was written")
     args = parser.parse_args()
 
+    if args.format == "xml" and not hasattr(Value, "to_xml_string"):
+        print("--format xml requires a dsviper build with XML support.", file=sys.stderr)
+        sys.exit(1)
+
     source = open_source(args)
     try:
-        definitions = export_definitions(source)
-        documents, document_count = export_documents(source)
+        definitions = export_definitions(source, args.format)
+        documents, document_count = export_documents(source, args.format)
         blob_index = export_blob_index(source)
         manifest = build_manifest(source, document_count, blob_index)
+        manifest["format"] = args.format
         write_bundle(source, args, manifest, definitions, documents, blob_index)
     finally:
         source.close()
