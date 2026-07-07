@@ -200,7 +200,7 @@ def main():
     manifest = load_manifest(bundle)
     fmt = manifest.get("format", "json")
     if fmt == "xml" and not hasattr(Value, "from_xml_string"):
-        fail("bundle is in XML format but the installed dsviper lacks XML support.")
+        fail("bundle is in XML format but the installed dsviper lacks XML support (requires dsviper >= 1.2.19).")
     definitions = load_definitions(bundle, fmt)
     blob_index = load_blob_index(bundle)
 

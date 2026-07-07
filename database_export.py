@@ -221,7 +221,7 @@ def main():
     args = parser.parse_args()
 
     if args.format == "xml" and not hasattr(Value, "to_xml_string"):
-        print("--format xml requires a dsviper build with XML support.", file=sys.stderr)
+        print("--format xml requires dsviper >= 1.2.19 (XML wire format support).", file=sys.stderr)
         sys.exit(1)
 
     source = open_source(args)
