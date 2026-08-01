@@ -52,6 +52,10 @@ server.start()
 while server.step():
     if cancelation.requested():
         break
-server.finish()
+
+remaining = server.finish_before(5)
+if remaining:
+    print(f"{remaining} client thread(s) still running, the server did not stop cleanly.")
+    exit(1)
 
 print("The server finished gracefully.")
