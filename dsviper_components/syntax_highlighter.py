@@ -1,6 +1,6 @@
 """Python syntax highlighter for QPlainTextEdit.
 
-Same application order as ge-qml version.
+Same application order as dsviper-ge-qml version.
 Colors from DSSyntaxColor.xcassets dark theme.
 """
 from __future__ import annotations

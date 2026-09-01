@@ -1,7 +1,7 @@
 """Python Editor Model — evaluation engine + script management.
 
 Uses Python exec()/eval() directly — no C++ bridge needed (PySide6 advantage).
-Adapted from ge-qml version for Qt Widgets.
+Adapted from dsviper-ge-qml version for Qt Widgets.
 """
 from __future__ import annotations
 

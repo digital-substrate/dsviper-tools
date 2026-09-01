@@ -1,7 +1,7 @@
 """DSCodeEditor — Python code editor widget with syntax highlighting, line numbers,
 find/replace, auto-completion, and output panel.
 
-Transposed from ge-qml CodeEditor.qml to Qt Widgets.
+Transposed from dsviper-ge-qml CodeEditor.qml to Qt Widgets.
 """
 from __future__ import annotations
 
