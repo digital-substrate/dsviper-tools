@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import argparse
+import re
 import subprocess
 import os
 import zlib
@@ -8,6 +9,21 @@ import base64
 from pathlib import Path
 
 from dsviper import DSMDefinitions, DSMBuilder, DSMParseReport, CommitDatabase, Database
+
+
+def _latest_kibo_jar(jars):
+    """Highest-versioned jar among `jars`, or None if none is named kibo-X.Y.Z.jar.
+
+    Compared on the parsed (major, minor, patch) tuple: an alphabetical sort
+    orders kibo-1.2.9.jar after kibo-1.2.11.jar and would pick the older jar
+    whenever a target/ directory holds more than one build.
+    """
+    candidates = []
+    for jar in jars:
+        m = re.match(r"^kibo-(\d+)\.(\d+)\.(\d+)\.jar$", jar.name)
+        if m:
+            candidates.append(((int(m.group(1)), int(m.group(2)), int(m.group(3))), jar))
+    return max(candidates)[1] if candidates else None
 
 
 def fatal_report_error(report: DSMParseReport, message: str):
@@ -90,8 +106,8 @@ def create_python_package(args):
     path_tools = Path(__file__).parent
     sibling_root = path_tools.parent.parent if path_tools.name == "tools" else path_tools.parent
 
-    bundled_jars = sorted(path_tools.glob("kibo-*.jar"))
-    sibling_jars = sorted((sibling_root / "kibo" / "target").glob("kibo-*.jar"))
+    bundled_jar = _latest_kibo_jar(path_tools.glob("kibo-*.jar"))
+    sibling_jar = _latest_kibo_jar((sibling_root / "kibo" / "target").glob("kibo-*.jar"))
 
     bundled_templates = path_tools.parent / "templates" / "python"
     sibling_templates = sibling_root / "kibo-template-viper" / "python"
@@ -100,10 +116,10 @@ def create_python_package(args):
         env_jar = os.environ.get("KIBO_JAR")
         if env_jar:
             arguments.kibo = Path(env_jar).resolve()
-        elif bundled_jars:
-            arguments.kibo = bundled_jars[-1].resolve()
-        elif sibling_jars:
-            arguments.kibo = sibling_jars[-1].resolve()
+        elif bundled_jar:
+            arguments.kibo = bundled_jar.resolve()
+        elif sibling_jar:
+            arguments.kibo = sibling_jar.resolve()
         else:
             print(f"'kibo: no jar found. Tried {path_tools}/kibo-*.jar (DevKit ZIP layout) "
                   f"and {sibling_root}/kibo/target/kibo-*.jar (sibling-checkout). "
@@ -184,8 +200,8 @@ def create_node_package(args):
     path_tools = Path(__file__).parent
     sibling_root = path_tools.parent.parent if path_tools.name == "tools" else path_tools.parent
 
-    bundled_jars = sorted(path_tools.glob("kibo-*.jar"))
-    sibling_jars = sorted((sibling_root / "kibo" / "target").glob("kibo-*.jar"))
+    bundled_jar = _latest_kibo_jar(path_tools.glob("kibo-*.jar"))
+    sibling_jar = _latest_kibo_jar((sibling_root / "kibo" / "target").glob("kibo-*.jar"))
 
     bundled_templates = path_tools.parent / "templates" / "typescript"
     sibling_templates = sibling_root / "kibo-template-viper" / "typescript"
@@ -194,10 +210,10 @@ def create_node_package(args):
         env_jar = os.environ.get("KIBO_JAR")
         if env_jar:
             args.kibo = Path(env_jar).resolve()
-        elif bundled_jars:
-            args.kibo = bundled_jars[-1].resolve()
-        elif sibling_jars:
-            args.kibo = sibling_jars[-1].resolve()
+        elif bundled_jar:
+            args.kibo = bundled_jar.resolve()
+        elif sibling_jar:
+            args.kibo = sibling_jar.resolve()
         else:
             print(f"'kibo: no jar found. Tried {path_tools}/kibo-*.jar (DevKit ZIP layout) "
                   f"and {sibling_root}/kibo/target/kibo-*.jar (sibling-checkout). "
