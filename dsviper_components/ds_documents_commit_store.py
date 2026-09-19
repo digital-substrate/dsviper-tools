@@ -106,7 +106,7 @@ class DSDocumentsCommitStore(DSDocuments):
             info = path.element_info()
 
             value_set = ValueSet.cast(info.set_path().at(item.document))
-            current_value = value_set.at(info.index())
+            current_value = value_set.at(info.index(), encoded=False)
 
             if info.element_path().is_root():
                 new_value = Value.copy(value)
