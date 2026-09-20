@@ -75,7 +75,8 @@ def resolve_source() -> Path:
         "error: cannot resolve dsviper-components source. "
         "Either checkout dsviper-components alongside this repo "
         "(github.com/digital-substrate/dsviper-components), set "
-        "$DSVIPER_COMPONENTS, or pip install dsviper-components."
+        "$DSVIPER_COMPONENTS, or install it from a "
+        "checkout (pip install ./dsviper-components) -- it is not on PyPI."
     )
 
 
