@@ -123,17 +123,23 @@ the pin is the discipline that keeps the repo free of phantom diffs.
 
 ## How `dsm_util.py` finds Kibo and templates
 
-`dsm_util.py` resolves the Kibo jar and the surface templates in this
-order:
+`create_python_package` and `create_node_package` generate with **kibo 1** and the
+kibo-template-viper **1.2** pack. Kibo 2 generates through
+[kibo-project](https://github.com/digital-substrate/kibo-project) and a project's
+`kibo.toml`. The other commands use neither.
 
-1. `KIBO_JAR` / `KIBO_TEMPLATES` environment variables.
-2. **Bundled (DevKit ZIP layout)**: `tools/kibo-*.jar` next to
-   `dsm_util.py`, templates at `../templates/python`.
-3. **Sibling-checkout (developer workstation)**:
-   `../kibo/target/kibo-*.jar` and `../kibo-template-viper/python`.
+They resolve the jar and the templates in this order:
 
-Both layouts are supported so the same script works inside the DevKit
-zip and on a fresh dev workstation that clones the sibling repos.
+1. `--kibo` / `--templates`, else the `KIBO_JAR` / `KIBO_TEMPLATES` environment
+   variables (`KIBO_TEMPLATES` names the pack; `python` or `typescript` is appended).
+2. **DevKit ZIP**: `dsm_util.py` in `tools/`, kibo 1 at `../kibo-1/tools/kibo-1.*.jar`,
+   its templates at `../kibo-1/templates/python` (or `typescript`). Kibo 2 sits beside
+   it in `../kibo-2/`.
+3. **Sibling checkouts**: `../kibo/target/kibo-1.*.jar` and
+   `../kibo-template-viper/python`, both on the 1.2 line.
+
+A kibo 2 jar, or a pack whose templates are stamped 2.x, is refused with a message
+pointing at kibo-project, rather than rendering a package that mixes the two lines.
 
 ## Distribution
 

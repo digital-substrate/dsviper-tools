@@ -26,6 +26,80 @@ def _latest_kibo_jar(jars):
     return max(candidates)[1] if candidates else None
 
 
+def _pack_line(templates):
+    """The major version stamped in a template directory (`kibo-template-viper X.Y.Z`), or None."""
+    for stg in sorted(Path(templates).rglob("*.stg")):
+        m = re.search(r"kibo-template-viper (\d+)\.\d+\.\d+", stg.read_text(errors="replace"))
+        if m:
+            return int(m.group(1))
+    return None
+
+
+def resolve_kibo_1(args, target):
+    """Set args.kibo and args.templates to kibo 1 and the 1.2 pack's `target` templates.
+
+    create_python_package and create_node_package generate with the kibo 1 line only.
+    They look, in order:
+
+    1. --kibo / --templates, else the KIBO_JAR / KIBO_TEMPLATES environment variables
+       (KIBO_TEMPLATES names the pack, `target` is appended).
+    2. The DevKit ZIP: this file in tools/, kibo 1 in ../kibo-1/tools/kibo-1.*.jar and its
+       templates in ../kibo-1/templates/<target>. The ZIP carries kibo 2 beside it, in
+       ../kibo-2/, which generates through kibo-project instead.
+    3. Sibling checkouts: ../kibo/target/kibo-1.*.jar and ../kibo-template-viper/<target>,
+       which must be on the 1.2 line.
+
+    A kibo 2 jar or a 2.x pack is refused: kibo 2 generates through kibo-project.
+    """
+    path_tools = Path(__file__).parent
+    root = path_tools.parent
+    sibling_root = root.parent if path_tools.name == "tools" else root
+    kibo_2 = "kibo 2 generates through kibo-project (kibo-2/tools/kibo_project.py in the DevKit ZIP)."
+
+    if not args.kibo:
+        env_jar = os.environ.get("KIBO_JAR")
+        if env_jar:
+            args.kibo = Path(env_jar).resolve()
+        else:
+            jar = (_latest_kibo_jar((root / "kibo-1" / "tools").glob("kibo-1.*.jar"))
+                   or _latest_kibo_jar((sibling_root / "kibo" / "target").glob("kibo-1.*.jar")))
+            if not jar:
+                print(f"kibo: no kibo 1 jar found. Tried {root}/kibo-1/tools/kibo-1.*.jar (DevKit ZIP) "
+                      f"and {sibling_root}/kibo/target/kibo-1.*.jar (sibling checkout). "
+                      f"Set KIBO_JAR to override. {kibo_2}")
+                exit(1)
+            args.kibo = jar.resolve()
+
+    if not os.path.exists(args.kibo):
+        print(f"kibo: {args.kibo} no such file")
+        exit(1)
+    if not re.match(r"^kibo-1\.\d+\.\d+\.jar$", Path(args.kibo).name):
+        print(f"kibo: {args.kibo} is not a kibo 1 jar; {kibo_2}")
+        exit(1)
+
+    if not args.templates:
+        env_templates = os.environ.get("KIBO_TEMPLATES")
+        bundled = root / "kibo-1" / "templates" / target
+        if env_templates:
+            args.templates = (Path(env_templates) / target).resolve()
+        elif bundled.exists():
+            args.templates = bundled.resolve()
+        else:
+            args.templates = (sibling_root / "kibo-template-viper" / target).resolve()
+
+    if not os.path.exists(args.templates):
+        print(f"templates: {args.templates} no such directory")
+        exit(1)
+    line = _pack_line(args.templates)
+    if line != 1:
+        print(f"templates: {args.templates} is not a kibo-template-viper 1.2 pack "
+              f"(stamped {line if line is not None else 'with no version'}); {kibo_2}")
+        exit(1)
+
+    print(f"* templates: {args.templates}")
+    print(f'*      kibo: {args.kibo}')
+
+
 def fatal_report_error(report: DSMParseReport, message: str):
     if report.has_error():
         print(message)
@@ -92,59 +166,7 @@ def create_database_main(args):
 
 # module sub-command
 def create_python_package(args):
-    # dsm_util.py supports two layouts:
-    #
-    # 1. DevKit ZIP (end user): jar bundled in tools/, templates one level
-    #    up at templates/. This is what the zip ships.
-    #
-    # 2. Sibling-checkout (developer): the kibo repo and the
-    #    kibo-template-viper repo are checked out as siblings of this
-    #    repo under a common parent directory.
-    #
-    # KIBO_JAR / KIBO_TEMPLATES env vars override both. The bundled
-    # layout is tried first because it matches the published zip.
-    path_tools = Path(__file__).parent
-    sibling_root = path_tools.parent.parent if path_tools.name == "tools" else path_tools.parent
-
-    bundled_jar = _latest_kibo_jar(path_tools.glob("kibo-*.jar"))
-    sibling_jar = _latest_kibo_jar((sibling_root / "kibo" / "target").glob("kibo-*.jar"))
-
-    bundled_templates = path_tools.parent / "templates" / "python"
-    sibling_templates = sibling_root / "kibo-template-viper" / "python"
-
-    if not arguments.kibo:
-        env_jar = os.environ.get("KIBO_JAR")
-        if env_jar:
-            arguments.kibo = Path(env_jar).resolve()
-        elif bundled_jar:
-            arguments.kibo = bundled_jar.resolve()
-        elif sibling_jar:
-            arguments.kibo = sibling_jar.resolve()
-        else:
-            print(f"'kibo: no jar found. Tried {path_tools}/kibo-*.jar (DevKit ZIP layout) "
-                  f"and {sibling_root}/kibo/target/kibo-*.jar (sibling-checkout). "
-                  f"Set KIBO_JAR to override.")
-            exit(1)
-
-    if not os.path.exists(arguments.kibo):
-        print(f"'kibo: {arguments.kibo} no such file")
-        exit(1)
-
-    if not arguments.templates:
-        env_templates = os.environ.get("KIBO_TEMPLATES")
-        if env_templates:
-            arguments.templates = (Path(env_templates) / "python").resolve()
-        elif bundled_templates.exists():
-            arguments.templates = bundled_templates.resolve()
-        else:
-            arguments.templates = sibling_templates.resolve()
-
-    if not os.path.exists(arguments.templates):
-        print(f"templates: {arguments.templates} no such directory")
-        exit(1)
-
-    print(f"* templates: {arguments.templates}")
-    print(f'*      kibo: {arguments.kibo}')
+    resolve_kibo_1(args, "python")
 
     builder = DSMBuilder.assemble(args.input_dsm)
     report, dsm_definitions, definitions = builder.parse()
@@ -192,53 +214,9 @@ def create_python_package(args):
 def create_node_package(args):
     # TypeScript / Node analogue of create_python_package. The Node package
     # reuses the same Kibo `python` converter pointed at the typescript/
-    # template directory — no kibo engine change is required. Sources land
-    # in <module>/src; the package.json and tsconfig.json land at <module>/.
-    #
-    # Layout / jar / template resolution mirror create_python_package (see
-    # there for the DevKit ZIP vs sibling-checkout layouts).
-    path_tools = Path(__file__).parent
-    sibling_root = path_tools.parent.parent if path_tools.name == "tools" else path_tools.parent
-
-    bundled_jar = _latest_kibo_jar(path_tools.glob("kibo-*.jar"))
-    sibling_jar = _latest_kibo_jar((sibling_root / "kibo" / "target").glob("kibo-*.jar"))
-
-    bundled_templates = path_tools.parent / "templates" / "typescript"
-    sibling_templates = sibling_root / "kibo-template-viper" / "typescript"
-
-    if not args.kibo:
-        env_jar = os.environ.get("KIBO_JAR")
-        if env_jar:
-            args.kibo = Path(env_jar).resolve()
-        elif bundled_jar:
-            args.kibo = bundled_jar.resolve()
-        elif sibling_jar:
-            args.kibo = sibling_jar.resolve()
-        else:
-            print(f"'kibo: no jar found. Tried {path_tools}/kibo-*.jar (DevKit ZIP layout) "
-                  f"and {sibling_root}/kibo/target/kibo-*.jar (sibling-checkout). "
-                  f"Set KIBO_JAR to override.")
-            exit(1)
-
-    if not os.path.exists(args.kibo):
-        print(f"'kibo: {args.kibo} no such file")
-        exit(1)
-
-    if not args.templates:
-        env_templates = os.environ.get("KIBO_TEMPLATES")
-        if env_templates:
-            args.templates = (Path(env_templates) / "typescript").resolve()
-        elif bundled_templates.exists():
-            args.templates = bundled_templates.resolve()
-        else:
-            args.templates = sibling_templates.resolve()
-
-    if not os.path.exists(args.templates):
-        print(f"templates: {args.templates} no such directory")
-        exit(1)
-
-    print(f"* templates: {args.templates}")
-    print(f'*      kibo: {args.kibo}')
+    # template directory. Sources land in <module>/src; the package.json and
+    # tsconfig.json land at <module>/.
+    resolve_kibo_1(args, "typescript")
 
     builder = DSMBuilder.assemble(args.input_dsm)
     report, dsm_definitions, definitions = builder.parse()
