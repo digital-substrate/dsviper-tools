@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import re
 import subprocess
+import sys
 import os
 import zlib
 import base64
@@ -98,6 +99,10 @@ def resolve_kibo_1(args, target):
 
     print(f"* templates: {args.templates}")
     print(f'*      kibo: {args.kibo}')
+    print("warning: kibo 1 is deprecated. It receives fixes only, for the life of the LTS-1.2 "
+          "line. New projects generate with kibo 2 (tools/kibo_project.py and a kibo.toml); "
+          "moving a project: https://docs.digitalsubstrate.io/using-generated-sdk/migrating.html",
+          file=sys.stderr)
 
 
 def fatal_report_error(report: DSMParseReport, message: str):

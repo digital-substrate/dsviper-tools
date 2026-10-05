@@ -10,6 +10,13 @@ runtime version (declared as a dependency in `requirements.txt`).
 
 ## [Unreleased]
 
+### Deprecated
+
+- **Generating with kibo 1** (`create_python_package`, `create_node_package`): kibo 1 is
+  deprecated. It receives fixes only, for the life of the LTS-1.2 line; new projects
+  generate with kibo 2 through kibo-project. Each generation says so on stderr, with the
+  migration guide's address. The package it generates is unchanged.
+
 ### Changed
 
 - **`create_python_package` and `create_node_package` find kibo 1 in the DevKit ZIP's
