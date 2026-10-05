@@ -54,7 +54,7 @@ def resolve_kibo_1(args, target):
     path_tools = Path(__file__).parent
     root = path_tools.parent
     sibling_root = root.parent if path_tools.name == "tools" else root
-    kibo_2 = "kibo 2 generates through kibo-project (kibo-2/tools/kibo_project.py in the DevKit ZIP)."
+    kibo_2 = "kibo 2 generates through kibo-project (tools/kibo_project.py in the DevKit ZIP)."
 
     if not args.kibo:
         env_jar = os.environ.get("KIBO_JAR")
