@@ -18,6 +18,8 @@ from dsviper import (
 
 
 CHUNK_SIZE = 48 * 1024 * 1024
+# 2: documents as Viper's text, attachments listed by runtime id in the manifest.
+BUNDLE_VERSION = 2
 
 
 def encoded(value):
@@ -106,24 +108,34 @@ def export_definitions(source, fmt):
 
 
 def export_documents(source, fmt):
-    documents = {}
+    """Each key and document as the exact text Viper writes, so any reader decodes it losslessly:
+    a JSON object read back by JavaScript would turn a whole-number double into an integer."""
+    documents = []
     total = 0
     for attachment in source.definitions.attachments():
         entries = []
         for key, document in source.attachment_getting.enumerate(attachment, encoded=False):
             if fmt == "xml":
-                entries.append({
-                    "key": Value.to_xml_string(key),
-                    "document": Value.to_xml_string(document),
-                })
+                entries.append({"key": Value.to_xml_string(key), "document": Value.to_xml_string(document)})
             else:
-                entries.append({
-                    "key": json.loads(Value.json_encode(key)),
-                    "document": json.loads(Value.json_encode(document)),
-                })
-        documents[attachment.identifier()] = entries
+                entries.append({"key": Value.json_encode(key), "document": Value.json_encode(document)})
+        documents.append((attachment, entries))
         total += len(entries)
     return documents, total
+
+
+def document_files(documents):
+    """runtime id -> identifier and file, the identity an import looks an attachment up by: the
+    identifier is a name, and its spelling has changed between runtime versions."""
+    files, taken = [], set()
+    for attachment, _ in documents:
+        runtime_id = encoded(attachment.runtime_id())
+        name = f"{safe_name(attachment.identifier())}.json"
+        if name in taken:  # two identifiers spelled alike once made safe
+            name = f"{safe_name(attachment.identifier())}.{runtime_id}.json"
+        taken.add(name)
+        files.append({"runtime_id": runtime_id, "identifier": attachment.identifier(), "file": name})
+    return files
 
 
 def export_blob_index(source):
@@ -140,9 +152,10 @@ def export_blob_index(source):
     return index
 
 
-def build_manifest(source, document_count, blob_index):
+def build_manifest(source, documents, document_count, blob_index):
     handle = source.handle
     manifest = {
+        "bundle_version": BUNDLE_VERSION,
         "source_type": source.kind,
         "path": handle.path(),
         "uuid": encoded(handle.uuid()),
@@ -155,6 +168,7 @@ def build_manifest(source, document_count, blob_index):
             "documents": document_count,
             "blobs": len(blob_index),
         },
+        "attachments": document_files(documents),
     }
     return manifest
 
@@ -178,8 +192,8 @@ def write_bundle(source, args, manifest, definitions, documents, blob_index):
         handle.write(definitions)
         handle.write("\n")
 
-    for identifier, entries in documents.items():
-        _dump_json(os.path.join(documents_dir, f"{safe_name(identifier)}.json"), entries, args.indent)
+    for (_, entries), described in zip(documents, manifest["attachments"]):
+        _dump_json(os.path.join(documents_dir, described["file"]), entries, args.indent)
 
     _dump_json(os.path.join(blobs_dir, "index.json"), blob_index, args.indent)
     blob_ids = {encoded(b): b for b in source.handle.blob_ids()}
@@ -229,7 +243,7 @@ def main():
         definitions = export_definitions(source, args.format)
         documents, document_count = export_documents(source, args.format)
         blob_index = export_blob_index(source)
-        manifest = build_manifest(source, document_count, blob_index)
+        manifest = build_manifest(source, documents, document_count, blob_index)
         manifest["format"] = args.format
         write_bundle(source, args, manifest, definitions, documents, blob_index)
     finally:
