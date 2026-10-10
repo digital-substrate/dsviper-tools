@@ -307,7 +307,7 @@ class DSCommits(QFrame, Ui_DSCommits):
         self.w_reset_button.setEnabled(current_commit_id.is_valid())
 
     def _configure_delete_button(self):
-        current_commit_id = self._store.state().commit_id
+        current_commit_id = self._store.state().commit_id()
         commit_ids = self._store.database().commit_ids()
         head_ids = self._store.database().head_commit_ids()
         enabled = current_commit_id in head_ids and len(commit_ids) > 1

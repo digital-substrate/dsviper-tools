@@ -26,6 +26,11 @@ runtime version (declared as a dependency in `requirements.txt`).
   of rendering a package that mixes the two lines. A sibling checkout must be on the 1.2
   line, or be named with `KIBO_JAR` / `KIBO_TEMPLATES`.
 
+### Fixed
+
+- **The commits view enables Delete on a head again**: it compared the method `commit_id`
+  with the head ids instead of calling it, so the button never enabled (dsviper-components).
+
 ## [1.2.0] - 2026-06-17
 
 First standalone release of the Database / CommitDatabase tooling (Qt Widgets):
