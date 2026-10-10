@@ -19,6 +19,8 @@ runtime version (declared as a dependency in `requirements.txt`).
 
 ### Changed
 
+- Requires `dsviper >= 1.2.30`: the bundles find attachments by runtime id, and a set of ids
+  comes back as a `ValueSet`.
 - **One bundle format, the one `dsviper-node-tools` writes** (`bundle_version` 2): each key and
   document is the text Viper writes, and either tool reads the other's bundles. A bundle 1.2.0
   wrote is refused: export the database again. The 1.2.0 `database_import` stops on a version 2
