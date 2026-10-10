@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import sys
 
 from dsviper import (
@@ -30,10 +29,6 @@ def fail(message):
 def read_json(path):
     with open(path, encoding="utf-8") as handle:
         return json.load(handle)
-
-
-def safe_name(identifier):
-    return re.sub(r"[^A-Za-z0-9._-]+", "_", identifier)
 
 
 def load_manifest(bundle):
@@ -97,20 +92,58 @@ def import_blobs(store, bundle, blob_index, verbose):
         print(f"Imported {len(blob_index)} blobs")
 
 
-def import_documents(definitions, bundle, set_document, verbose, fmt):
+def plan_documents(definitions, bundle, manifest):
+    """[(runtime id, entries)] for every documents file of the bundle, or fail before anything is
+    written: a file no attachment claims, or a count the manifest does not state, is data lost.
+
+    A bundle lists its attachments by runtime id, the identity that holds across runtime
+    versions; an identifier is a name, and `App::Lib::User.profile` was `Lib::User.profile`
+    before dsviper 1.2.30."""
+    described = manifest.get("attachments")
+    if described is None:
+        fail("This bundle does not list its attachments: dsviper-tools 1.2.0 wrote it. "
+             "Export the database again with this database_export.")
     documents_dir = os.path.join(bundle, "documents")
-    total = 0
+    present = sorted(f for f in os.listdir(documents_dir) if f.endswith(".json")) \
+        if os.path.isdir(documents_dir) else []
+    claimed = []
+    by_runtime_id = {entry["runtime_id"]: entry for entry in described}
     for attachment in definitions.attachments():
-        path = os.path.join(documents_dir, f"{safe_name(attachment.identifier())}.json")
-        if not os.path.exists(path):
-            continue
-        for entry in read_json(path):
+        entry = by_runtime_id.pop(runtime_id(attachment), None)
+        if entry is not None:
+            claimed.append((attachment, entry["file"]))
+    if by_runtime_id:
+        fail("The bundle lists attachments its definitions do not hold: "
+             + ", ".join(sorted(e["identifier"] for e in by_runtime_id.values())))
+
+    orphans = sorted(set(present) - {name for _, name in claimed})
+    if orphans:
+        fail("Documents no attachment of the bundle's definitions claims: " + ", ".join(orphans) + ".")
+
+    plan = [(runtime_id(attachment), read_json(os.path.join(documents_dir, name))) for attachment, name in claimed]
+    count = sum(len(entries) for _, entries in plan)
+    expected = manifest.get("counts", {}).get("documents")
+    if expected is not None and expected != count:
+        fail(f"The bundle holds {count} documents, its manifest states {expected}.")
+    return plan
+
+
+def runtime_id(attachment):
+    return str(attachment.runtime_id().encoded())
+
+
+def import_documents(definitions, plan, set_document, verbose, fmt):
+    attachments = {runtime_id(attachment): attachment for attachment in definitions.attachments()}
+    total = 0
+    for attachment_runtime_id, entries in plan:
+        attachment = attachments[attachment_runtime_id]
+        for entry in entries:
             if fmt == "xml":
                 key = Value.from_xml_string(entry["key"], attachment.type_key(), definitions)
                 document = Value.from_xml_string(entry["document"], attachment.document_type(), definitions)
             else:
-                key = Value.json_decode(json.dumps(entry["key"]), attachment.type_key(), definitions)
-                document = Value.json_decode(json.dumps(entry["document"]), attachment.document_type(), definitions)
+                key = Value.json_decode(entry["key"], attachment.type_key(), definitions)
+                document = Value.json_decode(entry["document"], attachment.document_type(), definitions)
             set_document(attachment, key, document)
             total += 1
     if verbose:
@@ -118,14 +151,14 @@ def import_documents(definitions, bundle, set_document, verbose, fmt):
     return total
 
 
-def import_into_database(output, documentation, definitions, bundle, blob_index, verbose, fmt):
+def import_into_database(output, documentation, definitions, bundle, plan, blob_index, verbose, fmt):
     db = Database.create(output, documentation=documentation)
     try:
         db.extend_definitions(definitions)
         live = db.definitions()
         db.begin_transaction()
         import_blobs(db.databasing(), bundle, blob_index, verbose)
-        count = import_documents(live, bundle, db.set, verbose, fmt)
+        count = import_documents(live, plan, db.set, verbose, fmt)
         db.commit()
     except BaseException:
         if db.in_transaction():
@@ -137,7 +170,7 @@ def import_into_database(output, documentation, definitions, bundle, blob_index,
     return count, hexdigest
 
 
-def import_into_commit_database(output, documentation, definitions, bundle, blob_index, label, verbose, fmt):
+def import_into_commit_database(output, documentation, definitions, bundle, plan, blob_index, label, verbose, fmt):
     cdb = CommitDatabase.create(output, documentation=documentation)
     try:
         cdb.extend_definitions(definitions)
@@ -147,7 +180,7 @@ def import_into_commit_database(output, documentation, definitions, bundle, blob
         import_blobs(store, bundle, blob_index, verbose)
         store.commit()
         mutable = CommitMutableState(CommitState(live))
-        count = import_documents(live, bundle, mutable.attachment_mutating().set, verbose, fmt)
+        count = import_documents(live, plan, mutable.attachment_mutating().set, verbose, fmt)
         cdb.commit_mutations(label, mutable)
     finally:
         hexdigest = cdb.definitions_hexdigest()
@@ -155,12 +188,8 @@ def import_into_commit_database(output, documentation, definitions, bundle, blob
     return count, hexdigest
 
 
-def verify(manifest, document_count, blob_index, hexdigest):
+def verify(manifest, blob_index, hexdigest):
     counts = manifest.get("counts", {})
-    expected_documents = counts.get("documents")
-    if expected_documents is not None and expected_documents != document_count:
-        print(f"Warning: document count mismatch (manifest {expected_documents}, imported {document_count}).",
-              file=sys.stderr)
     expected_blobs = counts.get("blobs")
     if expected_blobs is not None and expected_blobs != len(blob_index):
         print(f"Warning: blob count mismatch (manifest {expected_blobs}, imported {len(blob_index)}).",
@@ -191,18 +220,19 @@ def main():
     if not os.path.isdir(bundle):
         fail(f"No such bundle directory: {bundle}")
 
-    output = os.path.expanduser(args.output)
-    if os.path.exists(output):
-        if not args.force:
-            fail(f"Output already exists (use --force to overwrite): {output}")
-        os.remove(output)
-
     manifest = load_manifest(bundle)
     fmt = manifest.get("format", "json")
     if fmt == "xml" and not hasattr(Value, "from_xml_string"):
         fail("bundle is in XML format but the installed dsviper lacks XML support (requires dsviper >= 1.2.19).")
     definitions = load_definitions(bundle, fmt)
     blob_index = load_blob_index(bundle)
+    plan = plan_documents(definitions, bundle, manifest)
+
+    output = os.path.expanduser(args.output)
+    if os.path.exists(output):
+        if not args.force:
+            fail(f"Output already exists (use --force to overwrite): {output}")
+        os.remove(output)
 
     kind = args.target_kind or (
         "commit-database" if manifest.get("source_type") == "CommitDatabase" else "database")
@@ -210,14 +240,14 @@ def main():
 
     if kind == "commit-database":
         count, hexdigest = import_into_commit_database(
-            output, documentation, definitions, bundle, blob_index, args.label, args.verbose, fmt)
+            output, documentation, definitions, bundle, plan, blob_index, args.label, args.verbose, fmt)
         label = "CommitDatabase"
     else:
         count, hexdigest = import_into_database(
-            output, documentation, definitions, bundle, blob_index, args.verbose, fmt)
+            output, documentation, definitions, bundle, plan, blob_index, args.verbose, fmt)
         label = "Database"
 
-    verify(manifest, count, blob_index, hexdigest)
+    verify(manifest, blob_index, hexdigest)
 
     if args.verbose:
         print(f"Wrote {label} to {output} "

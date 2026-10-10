@@ -33,6 +33,12 @@ python3 commit_database_server.py …   # network service
 python3 service_client.py …           # function-pool RPC client
 ```
 
+The export and import tools have a test, over a model with two namespaces:
+
+```bash
+python3 -m unittest discover -s tests
+```
+
 ## Architecture
 
 Five entry points form one coherent workflow around a Database / CommitDatabase artefact:
