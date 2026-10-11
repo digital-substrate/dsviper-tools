@@ -101,7 +101,7 @@ def resolve_kibo_1(args, target):
     print(f'*      kibo: {args.kibo}')
     print("warning: kibo 1 is deprecated. It receives fixes only, for the life of the LTS-1.2 "
           "line. New projects generate with kibo 2 (tools/kibo_project.py and a kibo.toml); "
-          "moving a project: https://docs.digitalsubstrate.io/using-generated-sdk/migrating.html",
+          "moving a project: https://docs.digitalsubstrate.io/kibo-migration/index.html",
           file=sys.stderr)
 
 
