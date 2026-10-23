@@ -10,19 +10,19 @@ from dsviper import (
     CommitStore,
     ValueCommitId,
     CommitHeader,
-    ValueOpcodeDocumentSet,
-    ValueOpcodeDocumentUpdate,
-    ValueOpcodeSetUnion,
-    ValueOpcodeSetSubtract,
-    ValueOpcodeMapUnion,
-    ValueOpcodeMapSubtract,
-    ValueOpcodeMapUpdate,
-    ValueOpcodeXArrayInsert,
-    ValueOpcodeXArrayRemove,
-    ValueOpcodeXArrayUpdate
+    CommitOpcodeDocumentSet,
+    CommitOpcodeDocumentUpdate,
+    CommitOpcodeSetUnion,
+    CommitOpcodeSetSubtract,
+    CommitOpcodeMapUnion,
+    CommitOpcodeMapSubtract,
+    CommitOpcodeMapUpdate,
+    CommitOpcodeXArrayInsert,
+    CommitOpcodeXArrayRemove,
+    CommitOpcodeXArrayUpdate
 )
 
-from dsviper import Html, ValueOpcode
+from dsviper import Html, CommitOpcode
 from .ds_commit_store_notifier import DSCommitStoreNotifier
 
 
@@ -32,7 +32,7 @@ class DSCommitProgram(QFrame, Ui_DSCommitProgram):
         self.setupUi(self)
 
         self._store: CommitStore | None = None
-        self._opcodes: list[ValueOpcode] = []
+        self._opcodes: list[CommitOpcode] = []
         self._setup_connections()
 
     def set_store(self, store: CommitStore):
@@ -154,35 +154,35 @@ class DSCommitProgram(QFrame, Ui_DSCommitProgram):
             str_instance_id = opcode_key.instance_id().encoded()
             str_path = "-"
 
-            if isinstance(opcode, ValueOpcodeDocumentUpdate):
+            if isinstance(opcode, CommitOpcodeDocumentUpdate):
                 str_path = opcode.path().representation()
-            elif isinstance(opcode, ValueOpcodeSetUnion):
+            elif isinstance(opcode, CommitOpcodeSetUnion):
                 str_path = opcode.path().representation()
-            elif isinstance(opcode, ValueOpcodeSetSubtract):
+            elif isinstance(opcode, CommitOpcodeSetSubtract):
                 str_path = opcode.path().representation()
-            elif isinstance(opcode, ValueOpcodeMapUnion):
+            elif isinstance(opcode, CommitOpcodeMapUnion):
                 str_path = opcode.path().representation()
-            elif isinstance(opcode, ValueOpcodeMapSubtract):
+            elif isinstance(opcode, CommitOpcodeMapSubtract):
                 str_path = opcode.path().representation()
-            elif isinstance(opcode, ValueOpcodeMapUpdate):
+            elif isinstance(opcode, CommitOpcodeMapUpdate):
                 str_path = opcode.path().representation()
-            elif isinstance(opcode, ValueOpcodeXArrayInsert):
+            elif isinstance(opcode, CommitOpcodeXArrayInsert):
                 str_path = opcode.path().representation()
-            elif isinstance(opcode, ValueOpcodeXArrayRemove):
+            elif isinstance(opcode, CommitOpcodeXArrayRemove):
                 str_path = opcode.path().representation()
-            elif isinstance(opcode, ValueOpcodeXArrayUpdate):
+            elif isinstance(opcode, CommitOpcodeXArrayUpdate):
                 str_path = opcode.path().representation()
 
             str_position = "-"
-            if isinstance(opcode, ValueOpcodeXArrayInsert):
+            if isinstance(opcode, CommitOpcodeXArrayInsert):
                 str_position = opcode.position().encoded()
-            elif isinstance(opcode, ValueOpcodeXArrayRemove):
+            elif isinstance(opcode, CommitOpcodeXArrayRemove):
                 str_position = opcode.position().encoded()
-            elif isinstance(opcode, ValueOpcodeXArrayUpdate):
+            elif isinstance(opcode, CommitOpcodeXArrayUpdate):
                 str_position = opcode.position().encoded()
 
             str_before_position = "-"
-            if isinstance(opcode, ValueOpcodeXArrayInsert):
+            if isinstance(opcode, CommitOpcodeXArrayInsert):
                 str_before_position = opcode.before_position().encoded()
 
             texts = [str_attachment, str_concept, str_instance_id, str_opcode_type, str_path, str_position,
@@ -210,23 +210,23 @@ class DSCommitProgram(QFrame, Ui_DSCommitProgram):
         opcode = self._opcodes[selected_row]
 
         value = None
-        if isinstance(opcode, ValueOpcodeDocumentSet):
+        if isinstance(opcode, CommitOpcodeDocumentSet):
             value = opcode.value()
-        elif isinstance(opcode, ValueOpcodeDocumentUpdate):
+        elif isinstance(opcode, CommitOpcodeDocumentUpdate):
             value = opcode.value()
-        elif isinstance(opcode, ValueOpcodeSetUnion):
+        elif isinstance(opcode, CommitOpcodeSetUnion):
             value = opcode.value()
-        elif isinstance(opcode, ValueOpcodeSetSubtract):
+        elif isinstance(opcode, CommitOpcodeSetSubtract):
             value = opcode.value()
-        elif isinstance(opcode, ValueOpcodeMapUnion):
+        elif isinstance(opcode, CommitOpcodeMapUnion):
             value = opcode.value()
-        elif isinstance(opcode, ValueOpcodeMapSubtract):
+        elif isinstance(opcode, CommitOpcodeMapSubtract):
             value = opcode.value()
-        elif isinstance(opcode, ValueOpcodeMapUpdate):
+        elif isinstance(opcode, CommitOpcodeMapUpdate):
             value = opcode.value()
-        elif isinstance(opcode, ValueOpcodeSetSubtract):
+        elif isinstance(opcode, CommitOpcodeSetSubtract):
             value = opcode.value()
-        elif isinstance(opcode, ValueOpcodeXArrayUpdate):
+        elif isinstance(opcode, CommitOpcodeXArrayUpdate):
             value = opcode.value()
 
         if value:
