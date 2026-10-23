@@ -13,8 +13,8 @@ def generate():
 #AttachmentFunctionPoolFunctions(
 #AttachmentGetting(
 #AttachmentGettingFunction(
-#AttachmentMutating(
-#AttachmentMutatingFunction(
+#CommitAttachmentMutating(
+#CommitAttachmentMutatingFunction(
 #BlobArray(
 #BlobData(
 #BlobEncoder(
